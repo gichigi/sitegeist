@@ -4,7 +4,7 @@
 
 A cyberpunk-themed website structure analyzer that crawls domains, maps site structures, and reveals hidden issues. Built with Next.js, TypeScript, and D3.js.
 
-![Sitegeist Demo](https://via.placeholder.com/800x400/000000/00ff00?text=Sitegeist+Demo)
+<!-- Demo screenshot coming soon -->
 
 ## Features
 
@@ -42,7 +42,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 1. **Enter a URL**: Input any website URL (e.g., `example.com`)
 2. **Crawl**: The app will crawl the site and map its structure
 3. **Analyze**: View the interactive sitemap and AI insights
-4. **Export**: Generate PDF reports of your findings
+4. **Explore**: Click nodes to see detailed page information
 
 ## API Endpoints
 
