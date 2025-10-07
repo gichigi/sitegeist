@@ -1,8 +1,27 @@
 {
   "name": "sitegeist",
   "version": "1.0.0",
-  "description": "A cyberpunk website structure analyzer that crawls domains, maps site structures, and reveals hidden issues",
+  "description": "The digital spirit that haunts your website. Sitegeist crawls through forgotten corners, revealing hidden structures and lost pages that lurk in the digital shadows.",
   "private": false,
+  "homepage": "https://sitegeist.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gichigi/sitegeist.git"
+  },
+  "keywords": [
+    "website analyzer",
+    "site structure",
+    "orphaned pages",
+    "broken links",
+    "SEO audit",
+    "website crawler",
+    "digital spirits",
+    "site health",
+    "website analysis",
+    "technical SEO"
+  ],
+  "author": "Sitegeist",
+  "license": "MIT",
   "scripts": {
     "build": "next build",
     "dev": "next dev",

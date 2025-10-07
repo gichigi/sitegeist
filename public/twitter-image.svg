@@ -1,0 +1,22 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="600" fill="#000000"/>
+  <rect x="50" y="50" width="1100" height="500" rx="20" fill="#111111" stroke="#00ff00" stroke-width="2"/>
+  
+  <!-- Ghost icon -->
+  <g transform="translate(100, 100) scale(3)">
+    <path d="M9 10h.01" stroke="#00ff00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15 10h.01" stroke="#00ff00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" stroke="#00ff00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  
+  <!-- Title -->
+  <text x="350" y="250" font-family="monospace" font-size="42" fill="#00ff00" font-weight="bold">Sitegeist</text>
+  <text x="350" y="290" font-family="monospace" font-size="20" fill="#ffffff">Your site is haunted. We see the spirits.</text>
+  
+  <!-- Description -->
+  <text x="350" y="340" font-family="monospace" font-size="16" fill="#cccccc">The digital spirit that haunts your website.</text>
+  <text x="350" y="365" font-family="monospace" font-size="16" fill="#cccccc">Revealing hidden structures and lost pages.</text>
+  
+  <!-- URL -->
+  <text x="350" y="420" font-family="monospace" font-size="14" fill="#00ff00">sitegeist.vercel.app</text>
+</svg>
