@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { isValidUrl, normalizeUrl } from "@/lib/utils"
 import { crawlWebsite } from "@/lib/crawler"
 
+// Force dynamic rendering - disable caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function POST(request: NextRequest) {
   console.log("👻 The digital spirits have been summoned to the API...")
   

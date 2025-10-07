@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import type { PageNode, Link } from "@/lib/crawler"
 import OpenAI from "openai"
 
+// Force dynamic rendering - disable caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })

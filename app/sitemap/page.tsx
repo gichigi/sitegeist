@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+
+// Force dynamic rendering - disable static generation
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 import { Button } from "@/components/ui/button"
 import { Share2Icon, FileTextIcon, HomeIcon, AlertCircleIcon, RefreshCwIcon } from "lucide-react"
 import SimpleSitemapVisualization from "@/components/simple-sitemap-visualization"
@@ -366,37 +370,38 @@ export default function SitemapPage() {
       }
     }
 
-    async function runAiAnalysis(reportData) {
-      if (aiAnalyzing) return
-      
-      setAiAnalyzing(true)
-      console.log("👻 AI Analysis starting with data:", reportData)
-
-      try {
-        const response = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(reportData),
-        })
-
-        const data = await response.json()
-        
-        if (data.success && data.aiInsights) {
-          console.log("👻 AI Insights received:", data.aiInsights)
-          setAiInsights(data.aiInsights)
-        } else {
-          throw new Error(data.error || "AI analysis failed")
-        }
-      } catch (error) {
-        console.error("AI analysis error:", error)
-        setAiInsights("The digital spirits are restless and cannot provide analysis at this time. Please try again later.")
-      } finally {
-        setAiAnalyzing(false)
-      }
-    }
 
     fetchSitemap()
   }, [url, router, retrying])
+
+  async function runAiAnalysis(reportData) {
+    if (aiAnalyzing) return
+    
+    setAiAnalyzing(true)
+    console.log("👻 AI Analysis starting with data:", reportData)
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reportData),
+      })
+
+      const data = await response.json()
+      
+      if (data.success && data.aiInsights) {
+        console.log("👻 AI Insights received:", data.aiInsights)
+        setAiInsights(data.aiInsights)
+      } else {
+        throw new Error(data.error || "AI analysis failed")
+      }
+    } catch (error) {
+      console.error("AI analysis error:", error)
+      setAiInsights("The digital spirits are restless and cannot provide analysis at this time. Please try again later.")
+    } finally {
+      setAiAnalyzing(false)
+    }
+  }
 
   const handleRetry = () => {
     setRetrying(true)
