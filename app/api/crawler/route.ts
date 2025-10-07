@@ -2,21 +2,15 @@ import { type NextRequest, NextResponse } from "next/server"
 import { isValidUrl, normalizeUrl } from "@/lib/utils"
 import { crawlWebsite } from "@/lib/crawler"
 
-// Force dynamic rendering - disable caching
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 export async function POST(request: NextRequest) {
-  console.log("👻 The digital spirits have been summoned to the API...")
-  
   try {
     // Parse the request body
     const body = await request.json().catch((error) => {
-      console.error("👻 The spirits struggle to understand the summoning ritual:", error)
+      console.error("Error parsing request body:", error)
       return { url: null }
     })
 
-    const { url, maxPages = 8, maxDepth = 1, timeout = 30000 } = body // Limited to 8 pages for cost control
+    const { url, maxPages = 20, maxDepth = 1, timeout = 15000 } = body // Added timeout parameter with 15s default
 
     if (!url) {
       return NextResponse.json(
@@ -42,8 +36,6 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      console.log(`👻 The spirits prepare to explore ${normalizedUrl} with their scroll of parameters:`, { maxPages, maxDepth, timeout })
-      
       // Start the crawl with a longer timeout
       const crawlPromise = crawlWebsite(normalizedUrl, { maxPages, maxDepth, timeout })
 
@@ -54,41 +46,34 @@ export async function POST(request: NextRequest) {
 
       // Race the crawl against the timeout
       const crawlResult = await Promise.race([crawlPromise, timeoutPromise])
-      
-      console.log(`✨ The spirits have completed their digital journey: ${crawlResult.nodes.length} realms explored, ${crawlResult.links.length} pathways mapped`)
 
       return NextResponse.json({
         success: true,
         data: crawlResult,
       })
     } catch (crawlError) {
-      console.error("👻 The spirits encountered resistance during their journey:", crawlError)
+      console.error("Crawl execution error:", crawlError)
 
-      // Check if it's a timeout or rate limiting error
+      // Check if it's a timeout error
       const isTimeout =
         crawlError.message &&
         (crawlError.message.includes("timed out") ||
           crawlError.message.includes("ETIMEDOUT") ||
           crawlError.message.includes("timeout"))
-      
-      const isRateLimited = crawlError.message && crawlError.message.includes("429")
 
       // Return a proper JSON response for the crawl error
       return NextResponse.json(
         {
           success: false,
-          error: isRateLimited 
-            ? "The digital realm is protecting itself from too many requests. The spirits must wait before exploring again."
-            : crawlError.message || "Failed to crawl website. The site resists our gaze.",
+          error: crawlError.message || "Failed to crawl website. The site resists our gaze.",
           isTimeout: isTimeout,
-          isRateLimited: isRateLimited,
           data: { nodes: [], links: [] }, // Return empty data structure for graceful degradation
         },
-        { status: isTimeout ? 408 : isRateLimited ? 429 : 500 },
+        { status: isTimeout ? 408 : 500 },
       )
     }
   } catch (error) {
-    console.error("👻 The digital spirits have been overwhelmed by the summoning ritual:", error)
+    console.error("Crawler API error:", error)
 
     // Ensure we always return a proper JSON response
     return NextResponse.json(

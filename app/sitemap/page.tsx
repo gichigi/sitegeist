@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-
-// Force dynamic rendering - disable static generation
-export const dynamic = 'force-dynamic'
 import { Button } from "@/components/ui/button"
-import { Share2Icon, FileTextIcon, HomeIcon, AlertCircleIcon, RefreshCwIcon } from "lucide-react"
-import SimpleSitemapVisualization from "@/components/simple-sitemap-visualization"
+import { Share2Icon, FileTextIcon, HomeIcon, AlertCircleIcon, RefreshCwIcon, DownloadIcon } from "lucide-react"
+import SitemapVisualization from "@/components/sitemap-visualization"
 import { MetricsPanel } from "@/components/metrics-panel"
 import { AiInsights } from "@/components/ai-insights"
 import Link from "next/link"
@@ -15,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { saveToLocalStorage, getFromLocalStorage, generateStorageKey } from "@/lib/client-storage"
 import { normalizeUrl } from "@/lib/utils"
 import { LoadingScreen } from "@/components/loading-screen"
+import { exportToPdf } from "@/lib/pdf-export"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 
 export default function SitemapPage() {
@@ -40,27 +38,18 @@ export default function SitemapPage() {
     const orphanedPages = sitemapData.nodes.filter((node) => node.isOrphaned).length
     const deadLinks = findDeadLinks(sitemapData).length
     const deadEnds = findDeadEnds(sitemapData).length
-    
-    // Count pages by status for more contextual metrics
-    const errorPages = sitemapData.nodes.filter(node => node.status >= 400).length
-    const redirectPages = sitemapData.nodes.filter(node => node.status >= 300 && node.status < 400).length
-    const healthyPages = sitemapData.nodes.filter(node => node.status >= 200 && node.status < 300).length
-    const totalPages = sitemapData.nodes.length
 
-    // More contextual revenue impact based on actual issues
-    const baseRevenueImpact = errorPages * 150 + redirectPages * 75 + deadLinks * 100 + orphanedPages * 50 + deadEnds * 75
-    
-    // Users lost based on actual problems
-    const usersLost = errorPages * 50 + redirectPages * 25 + deadLinks * 20 + orphanedPages * 10
-    
-    // Health score based on actual page health
-    const problemPages = errorPages + redirectPages + orphanedPages + deadLinks + deadEnds
-    const healthScore = totalPages === 0 ? 0 : Math.max(0, Math.round(((healthyPages - problemPages) / totalPages) * 100))
+    // Simple formulas for metrics
+    const revenueLost = deadLinks * 100 + orphanedPages * 50 + deadEnds * 75
+    const usersLost = deadLinks * 20 + orphanedPages * 10
+    const totalPages = sitemapData.nodes.length
+    const structuralDecay =
+      totalPages === 0 ? 0 : Math.min(100, Math.round(((deadLinks + orphanedPages + deadEnds) / totalPages) * 100))
 
     return {
-      revenueLost: Math.max(0, baseRevenueImpact),
-      usersLost: Math.max(0, usersLost),
-      structuralDecay: Math.max(0, healthScore),
+      revenueLost,
+      usersLost,
+      structuralDecay,
       orphanedPages,
       deadLinks,
       deadEnds,
@@ -167,16 +156,15 @@ export default function SitemapPage() {
         // Reset retrying state
         if (retrying) setRetrying(false)
 
-        // Simulate progress updates with better UX
+        // Simulate progress updates
         const progressInterval = setInterval(() => {
           setProgress((prev) => {
-            // More realistic progress simulation
-            if (prev < 30) return Math.min(prev + 8, 30)
-            if (prev < 60) return Math.min(prev + 4, 60)
-            if (prev < 85) return Math.min(prev + 2, 85)
-            return Math.min(prev + 1, 95)
+            // Slow down progress as it gets higher to manage expectations
+            if (prev < 50) return Math.min(prev + 5, 95)
+            if (prev < 80) return Math.min(prev + 2, 95)
+            return Math.min(prev + 0.5, 95)
           })
-        }, 800)
+        }, 1000)
 
         // Start a new crawl
         const response = await fetch("/api/crawler", {
@@ -186,9 +174,9 @@ export default function SitemapPage() {
           },
           body: JSON.stringify({
             url,
-            maxPages: 15, // Reduced for faster crawling
-            maxDepth: 1, // Keep depth 1 for speed
-            timeout: 10000, // Reduced timeout for better UX
+            maxPages: 20, // Limit to 20 pages for faster crawling
+            maxDepth: 1, // Limit to depth 1 for faster crawling
+            timeout: 15000, // 15 seconds timeout for each request
           }),
         })
 
@@ -259,13 +247,37 @@ export default function SitemapPage() {
               setProgress(100)
               setLoading(false)
 
-              // Run AI analysis with the already processed report data
-              runAiAnalysis(reportDataObj)
+              // Run AI analysis
+              runAiAnalysis(responseData.data)
               return
             }
 
-            // No mock data - show error instead
-            setError("The digital spirits encountered a timeout. The site resisted our gaze. Please try a smaller site or check if the site is accessible.")
+            // Create minimal mock data based on the URL
+            const mockData = {
+              nodes: [{ id: url, url: url, status: 200, title: "Homepage", description: "", contentType: "text/html" }],
+              links: [],
+            }
+
+            // Save to localStorage
+            saveToLocalStorage(storageKey, mockData)
+            setSitemapData(mockData)
+
+            // Set minimal report data
+            setReportData({
+              url,
+              metrics: {
+                revenueLost: 0,
+                usersLost: 0,
+                structuralDecay: 0,
+              },
+              issues: {
+                orphanPages: [],
+                deadLinks: [],
+                deadEnds: [],
+              },
+            })
+
+            setProgress(100)
             setLoading(false)
             return
           }
@@ -313,24 +325,11 @@ export default function SitemapPage() {
         setProgress(100)
         setLoading(false)
 
-        // Run AI analysis with the already processed report data
-        runAiAnalysis(reportDataObj)
+        // Run AI analysis
+        runAiAnalysis(responseData.data)
       } catch (err) {
         console.error("Sitemap error:", err)
-        let ghostlyMessage = err.message || "The spirits are restless. Try again later."
-        
-        // Add more atmospheric error messages
-        if (err.message.includes("timeout") || err.message.includes("timed out")) {
-          ghostlyMessage = "The digital spirits are taking their time... The site resists our gaze. Try a smaller domain or check if the spirits are awake."
-        } else if (err.message.includes("Invalid URL")) {
-          ghostlyMessage = "The void cannot be mapped with such an address. Please enter a proper domain for the spirits to explore."
-        } else if (err.message.includes("network") || err.message.includes("fetch")) {
-          ghostlyMessage = "The digital realm is unreachable. The spirits cannot cross the void. Check your connection to the ethereal plane."
-        } else if (err.message.includes("429") || err.message.includes("rate limit")) {
-          ghostlyMessage = "The digital realm is protecting itself from too many requests. The spirits must wait before exploring again. Try again in a few minutes."
-        }
-        
-        setError(ghostlyMessage)
+        setError(err.message || "The spirits are restless. Try again later.")
         setLoading(false)
 
         // Create fallback data for development/testing
@@ -369,62 +368,119 @@ export default function SitemapPage() {
       }
     }
 
+    async function runAiAnalysis(sitemapData) {
+      try {
+        setAiAnalyzing(true)
+
+        // Check if we have cached AI insights
+        const storageKey = generateStorageKey(url, "ai-insights")
+        const cachedInsights = getFromLocalStorage(storageKey)
+
+        if (cachedInsights) {
+          setAiInsights(cachedInsights)
+          setAiAnalyzing(false)
+          return
+        }
+
+        // Generate fallback insights in case the API fails
+        const fallbackInsights = `I've scanned your site and found ${sitemapData.nodes.length} pages connected by ${sitemapData.links.length} pathways. 
+
+The digital structure reveals potential issues that need attention. Focus on fixing broken links and improving navigation paths.
+
+Remember, in the digital realm, structure is destiny. Fix these issues, and your site will rise from the shadows.`
+
+        try {
+          // Run AI analysis with timeout
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+          const response = await fetch("/api/analyze", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              nodes: sitemapData.nodes,
+              links: sitemapData.links,
+            }),
+            signal: controller.signal,
+          }).catch((error) => {
+            console.error("Fetch error:", error)
+            throw new Error("Failed to connect to analysis service")
+          })
+
+          clearTimeout(timeoutId)
+
+          // Handle non-200 responses
+          if (!response.ok) {
+            console.error("API returned error status:", response.status)
+            throw new Error(`API error: ${response.status}`)
+          }
+
+          // Check for non-JSON responses
+          const contentType = response.headers.get("content-type")
+          if (!contentType || !contentType.includes("application/json")) {
+            console.error(
+              "Non-JSON response from AI analysis:",
+              await response.text().catch(() => "Could not read response text"),
+            )
+            throw new Error("Server returned a non-JSON response")
+          }
+
+          // Safely parse JSON
+          const responseData = await response.json().catch((error) => {
+            console.error("JSON parse error:", error)
+            throw new Error("Failed to parse server response")
+          })
+
+          if (!responseData.success) {
+            throw new Error(responseData.error || "AI analysis failed")
+          }
+
+          // Save insights to localStorage
+          const insights = responseData.aiInsights || fallbackInsights
+          saveToLocalStorage(storageKey, insights)
+          setAiInsights(insights)
+        } catch (error) {
+          console.error("AI analysis error:", error)
+
+          // Use fallback insights
+          saveToLocalStorage(storageKey, fallbackInsights)
+          setAiInsights(fallbackInsights)
+        }
+      } catch (error) {
+        console.error("Unexpected error in AI analysis:", error)
+
+        // Ultimate fallback
+        const ultimateFallback = "The AI couldn't analyze your site structure. Please try again later."
+        setAiInsights(ultimateFallback)
+      } finally {
+        setAiAnalyzing(false)
+      }
+    }
 
     fetchSitemap()
   }, [url, router, retrying])
 
-  async function runAiAnalysis(reportData) {
-    if (aiAnalyzing) return
-    
-    setAiAnalyzing(true)
-    console.log("👻 AI Analysis starting with data:", reportData)
-
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reportData),
-      })
-
-      const data = await response.json()
-      
-      if (data.success && data.aiInsights) {
-        console.log("👻 AI Insights received:", data.aiInsights)
-        setAiInsights(data.aiInsights)
-      } else {
-        throw new Error(data.error || "AI analysis failed")
-      }
-    } catch (error) {
-      console.error("AI analysis error:", error)
-      setAiInsights("The digital spirits are restless and cannot provide analysis at this time. Please try again later.")
-    } finally {
-      setAiAnalyzing(false)
-    }
-  }
-
   const handleRetry = () => {
     setRetrying(true)
-    setError(null)
-    setWarning(null)
-    setProgress(0)
-    setAiInsights("")
-    setAiAnalyzing(false)
-    setSelectedNode(null)
-    setReportData(null)
-  }
-
-  const handleRetryInsights = () => {
-    if (reportData) {
-      setAiInsights("")
-      setAiAnalyzing(false)
-      runAiAnalysis(reportData)
-    }
   }
 
   const handleNodeSelect = (node) => {
     setSelectedNode(node)
   }
 
+  const handleExportPdf = async () => {
+    if (!reportData || !url) return
+
+    const success = await exportToPdf(url, reportData, aiInsights)
+
+    if (success) {
+      alert("PDF report exported successfully!")
+    } else {
+      alert("Failed to export PDF. Please try again.")
+    }
+  }
 
   if (error) {
     return (
@@ -440,10 +496,10 @@ export default function SitemapPage() {
               onClick={handleRetry}
             >
               <RefreshCwIcon className="h-4 w-4 mr-2" />
-              Summon Again
+              Try Again
             </Button>
             <Button asChild variant="outline" className="border-gray-800 text-gray-400 hover:text-green-400">
-              <Link href="/">Try Another Domain</Link>
+              <Link href="/">Return to the void</Link>
             </Button>
           </div>
         </div>
@@ -453,7 +509,7 @@ export default function SitemapPage() {
 
   // Show the loading screen while loading
   if (loading) {
-    return <LoadingScreen progress={progress} url={url} message="The spirits are exploring your digital domain..." />
+    return <LoadingScreen progress={progress} url={url} message="Mapping site structure..." />
   }
 
   return (
@@ -491,7 +547,27 @@ export default function SitemapPage() {
               <span className="sr-only">Share</span>
             </Button>
 
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-gray-800 text-gray-400 hover:text-green-400 hover:border-green-900 px-2 sm:px-3"
+              onClick={handleExportPdf}
+              aria-label="Export PDF"
+            >
+              <DownloadIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="sr-only">Export PDF</span>
+            </Button>
 
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-gray-800 text-gray-400 hover:text-green-400 hover:border-green-900 px-2 sm:px-3"
+              onClick={handleRetry}
+              aria-label="Retry"
+            >
+              <RefreshCwIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="sr-only">Retry</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -503,17 +579,8 @@ export default function SitemapPage() {
               Site Structure: <span className="text-green-400 break-all">{url}</span>
             </h1>
             <p className="text-gray-400 text-xs sm:text-sm">
-              The spirits whisper secrets through the digital nodes. Click to unveil their mysteries.
+              The map reveals all connections. Hover on nodes to see details. Click to select.
             </p>
-
-            <div className="pt-2">
-              <Button asChild variant="outline" className="border-gray-700 text-gray-300 hover:text-green-400 hover:border-green-600">
-                <Link href="/" className="flex items-center gap-2">
-                  <HomeIcon className="h-4 w-4" />
-                  Analyze Another Domain
-                </Link>
-              </Button>
-            </div>
 
             {warning && (
               <Alert className="mt-4 bg-yellow-900 border-yellow-800 text-yellow-300">
@@ -531,7 +598,7 @@ export default function SitemapPage() {
             {/* Left panel - Sitemap visualization */}
             <ResizablePanel defaultSize={65} minSize={40}>
               <div className="h-full">
-                <SimpleSitemapVisualization data={sitemapData} onNodeSelect={handleNodeSelect} />
+                <SitemapVisualization data={sitemapData} onNodeSelect={handleNodeSelect} />
               </div>
             </ResizablePanel>
 
@@ -580,13 +647,13 @@ export default function SitemapPage() {
                     <p className="text-gray-500 text-sm mt-4">AI is analyzing your site structure...</p>
                   </div>
                 ) : aiInsights ? (
-                  <AiInsights insights={aiInsights} onRetryInsights={handleRetryInsights} />
+                  <AiInsights insights={aiInsights} onExportPdf={handleExportPdf} />
                 ) : null}
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
 
-          <div className="text-sm text-gray-400 space-y-2">
+          <div className="text-sm text-gray-400">
             <p>
               Found {sitemapData.nodes.length} pages and {sitemapData.links.length} connections.
             </p>

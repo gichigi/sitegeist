@@ -292,7 +292,7 @@ export default function ReportPage() {
 
   // Show the loading screen while loading
   if (loading) {
-    return <LoadingScreen progress={progress} url={url} message="The spirits are communing with your site's digital essence..." />
+    return <LoadingScreen progress={progress} url={url} message="Analyzing site structure..." />
   }
 
   return (

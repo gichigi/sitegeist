@@ -44,7 +44,7 @@ export default function Home() {
             There's something lurking in your website.
           </h1>
           <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto px-2">
-            Summon the spirits. Reveal the forgotten.
+            Crawl your domain. Find lost pages.
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export default function Home() {
             <Input
               type="text"
               name="url"
-              placeholder="Enter a domain for the spirits to explore..."
+              placeholder="example.com"
               required
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -63,10 +63,10 @@ export default function Home() {
               type="submit"
               className="absolute right-1 top-1 h-10 sm:h-12 bg-green-900 hover:bg-green-800 text-green-400 border-none"
             >
-              Summon
+              Reveal
             </Button>
           </div>
-          <p className="text-xs text-gray-400">Enter any URL. The spirits will explore its depths. Reveal what lurks in the digital shadows.</p>
+          <p className="text-xs text-gray-400">Enter any URL. We'll map its structure. Show what lurks beneath.</p>
         </form>
 
         <div className="pt-6 sm:pt-8 border-t border-gray-900 max-w-md mx-auto w-full px-2">

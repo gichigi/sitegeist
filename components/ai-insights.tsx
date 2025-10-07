@@ -1,86 +1,59 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import {
   SearchIcon,
   UsersIcon,
   CodeIcon,
   FileTextIcon,
-  RefreshCwIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DownloadIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface AiInsightsProps {
   insights: string
-  onRetryInsights?: () => void
+  onExportPdf: () => void
 }
 
-export function AiInsights({ insights, onRetryInsights }: AiInsightsProps) {
-  const [isAnalyzing, setIsAnalyzing] = useState(true)
-  const [currentMessage, setCurrentMessage] = useState("")
-  const [visibleSections, setVisibleSections] = useState({
-    seo: false,
+export function AiInsights({ insights, onExportPdf }: AiInsightsProps) {
+  const [expandedSections, setExpandedSections] = useState({
+    seo: true,
     ux: false,
     technical: false,
     content: false,
   })
-  const [typewriterText, setTypewriterText] = useState({
-    seo: "",
-    ux: "",
-    technical: "",
-    content: "",
-  })
 
-  const loadingMessages = [
-    "The spirits are analyzing your digital realm...",
-    "Ancient pathways are being mapped...",
-    "The digital spirits whisper their findings...",
-    "Echoes of forgotten pages call from the void...",
-    "The spirits are patient, but they will speak...",
-    "Lost pages emerge from the digital shadows...",
-    "The digital realm reveals its secrets...",
-    "The spirits are gathering their wisdom...",
-    "Hidden connections are being discovered...",
-    "The digital void yields its mysteries...",
-  ]
-
-  // Parse insights into sections from the AI-generated report
+  // Parse insights into sections
+  // In a real implementation, we'd have the AI return structured data
+  // For now, we'll simulate by splitting the text
   const parseInsights = (text: string) => {
-    // Default fallback content in Sitegeist brand voice
-    const defaultSections = {
-      seo: "The digital spirits whisper of SEO opportunities hidden in the shadows. Your meta descriptions and title tags need the spirits' attention.",
-      ux: "Users are wandering through digital dead ends, lost in the void of poor navigation. The spirits suggest clearer pathways.",
-      technical: "The digital realm has structural issues that need the spirits' intervention. Broken links and errors haunt your site.",
-      content: "Orphaned pages lurk in the shadows, valuable content that users cannot discover. The spirits know their secrets.",
+    // This is a simplified parsing approach
+    // In reality, we'd have the AI return structured data
+    const sections = {
+      seo: "Optimize your meta descriptions and title tags for better search visibility. Several pages lack proper meta descriptions.",
+      ux: "User experience is hindered by dead-end pages and broken navigation paths. Consider adding related content sections.",
+      technical: "Fix the 404 errors and redirect old URLs to maintain link equity. Update internal linking structure.",
+      content:
+        "Content gaps exist in key areas. Orphaned pages contain valuable information that users can't discover.",
     }
 
-    // If no AI insights, return defaults
-    if (!text || text.length < 50) {
-      return defaultSections
-    }
-
-    // Simple parsing for the AI response format: **Section:** followed by bullet points
-    const sections = { ...defaultSections }
-
-    // Extract sections using simple regex for **Section:** format
-    const seoMatch = text.match(/\*\*SEO:\*\*([\s\S]*?)(?=\*\*|$)/i)
-    if (seoMatch) {
-      sections.seo = seoMatch[1].trim()
-    }
-
-    const uxMatch = text.match(/\*\*User Experience:\*\*([\s\S]*?)(?=\*\*|$)/i)
-    if (uxMatch) {
-      sections.ux = uxMatch[1].trim()
-    }
-
-    const techMatch = text.match(/\*\*Technical Issues:\*\*([\s\S]*?)(?=\*\*|$)/i)
-    if (techMatch) {
-      sections.technical = techMatch[1].trim()
-    }
-
-    const contentMatch = text.match(/\*\*Content Strategy:\*\*([\s\S]*?)(?=\*\*|$)/i)
-    if (contentMatch) {
-      sections.content = contentMatch[1].trim()
+    // If we have real insights, try to extract sections
+    if (text && text.length > 50) {
+      // Very basic extraction - in reality we'd have better parsing
+      if (text.includes("SEO")) {
+        sections.seo = text.split("SEO")[1].split("\n\n")[0]
+      }
+      if (text.includes("User Experience")) {
+        sections.ux = text.split("User Experience")[1].split("\n\n")[0]
+      }
+      if (text.includes("Technical")) {
+        sections.technical = text.split("Technical")[1].split("\n\n")[0]
+      }
+      if (text.includes("Content")) {
+        sections.content = text.split("Content")[1].split("\n\n")[0]
+      }
     }
 
     return sections
@@ -88,181 +61,103 @@ export function AiInsights({ insights, onRetryInsights }: AiInsightsProps) {
 
   const insightSections = parseInsights(insights)
 
-  // Rotate loading messages
-  useEffect(() => {
-    if (!isAnalyzing) return
-
-    let messageIndex = 0
-    const interval = setInterval(() => {
-      setCurrentMessage(loadingMessages[messageIndex])
-      messageIndex = (messageIndex + 1) % loadingMessages.length
-    }, 2000)
-
-    return () => clearInterval(interval)
-  }, [isAnalyzing])
-
-  // Start the analysis sequence
-  useEffect(() => {
-    if (!insights) return
-
-    // Start analysis after a short delay
-    const timer = setTimeout(() => {
-      setIsAnalyzing(false)
-      startRevealSequence()
-    }, 3000)
-
-    return () => clearTimeout(timer)
-  }, [insights])
-
-  const startRevealSequence = () => {
-    const sections = ['seo', 'ux', 'technical', 'content'] as const
-    
-    const startNextSection = (index: number) => {
-      if (index >= sections.length) return
-      
-      const section = sections[index]
-      setVisibleSections(prev => ({ ...prev, [section]: true }))
-      
-      // Start typewriter for this section
-      startTypewriter(section, insightSections[section], () => {
-        // When this section finishes typing, start the next one after a delay
-        setTimeout(() => {
-          startNextSection(index + 1)
-        }, 1000) // 1 second pause between sections
-      })
-    }
-    
-    // Start with the first section
-    startNextSection(0)
-  }
-
-  const startTypewriter = (section: keyof typeof typewriterText, text: string, onComplete?: () => void) => {
-    let currentIndex = 0
-    const typewriterInterval = setInterval(() => {
-      if (currentIndex < text.length) {
-        setTypewriterText(prev => ({
-          ...prev,
-          [section]: text.substring(0, currentIndex + 1)
-        }))
-        currentIndex++
-      } else {
-        clearInterval(typewriterInterval)
-        // Call the completion callback
-        if (onComplete) {
-          onComplete()
-        }
-      }
-    }, 30) // 30ms per character for smooth typing
-  }
-
-  if (isAnalyzing) {
-    return (
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">AI Insights</h2>
-        </div>
-        
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400 mx-auto mb-4"></div>
-            <h3 className="text-lg font-medium text-white mb-2">The spirits are at work...</h3>
-            <p className="text-sm text-gray-400 min-h-[3rem] flex items-center transition-opacity duration-500">
-              {currentMessage}
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+  const toggleSection = (section: string) => {
+    setExpandedSections({
+      ...expandedSections,
+      [section]: !expandedSections[section],
+    })
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">AI Insights</h2>
-        {onRetryInsights && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRetryInsights}
-            className="bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-          >
-            <RefreshCwIcon className="h-4 w-4 mr-2" />
-            Respawn Insights
-          </Button>
-        )}
+    <div className="bg-gray-950 border border-gray-900 rounded-md">
+      <div className="flex items-center justify-between p-4 border-b border-gray-900">
+        <h2 className="text-lg font-light text-green-400">AI Insights</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-gray-900 hover:bg-gray-800 text-gray-400 border-gray-800"
+          onClick={onExportPdf}
+        >
+          <DownloadIcon className="h-4 w-4 mr-2" />
+          Export PDF
+        </Button>
       </div>
 
-      <div className="space-y-4">
+      <div className="divide-y divide-gray-900">
         {/* SEO Section */}
-        <div className={`transition-all duration-1000 ${visibleSections.seo ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="p-4 border border-gray-700 rounded-lg bg-gray-800">
-            <div className="flex items-center mb-3">
+        <div className="p-4">
+          <button className="flex items-center justify-between w-full text-left" onClick={() => toggleSection("seo")}>
+            <div className="flex items-center">
               <SearchIcon className="h-4 w-4 text-green-400 mr-2" />
-              <span className="text-sm font-semibold text-white">SEO Insights</span>
+              <span className="text-sm font-medium text-gray-300">SEO Insights</span>
             </div>
-            {visibleSections.seo && (
-              <div className="text-sm text-gray-300 leading-relaxed">
-                <div className="whitespace-pre-line">
-                  {typewriterText.seo}
-                  <span className="animate-pulse">|</span>
-                </div>
-              </div>
+            {expandedSections.seo ? (
+              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             )}
-          </div>
+          </button>
+
+          {expandedSections.seo && <div className="mt-2 text-xs text-gray-400 pl-6">{insightSections.seo}</div>}
         </div>
 
         {/* UX Section */}
-        <div className={`transition-all duration-1000 ${visibleSections.ux ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="p-4 border border-gray-700 rounded-lg bg-gray-800">
-            <div className="flex items-center mb-3">
+        <div className="p-4">
+          <button className="flex items-center justify-between w-full text-left" onClick={() => toggleSection("ux")}>
+            <div className="flex items-center">
               <UsersIcon className="h-4 w-4 text-green-400 mr-2" />
-              <span className="text-sm font-semibold text-white">User Experience</span>
+              <span className="text-sm font-medium text-gray-300">User Experience</span>
             </div>
-            {visibleSections.ux && (
-              <div className="text-sm text-gray-300 leading-relaxed">
-                <div className="whitespace-pre-line">
-                  {typewriterText.ux}
-                  <span className="animate-pulse">|</span>
-                </div>
-              </div>
+            {expandedSections.ux ? (
+              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             )}
-          </div>
+          </button>
+
+          {expandedSections.ux && <div className="mt-2 text-xs text-gray-400 pl-6">{insightSections.ux}</div>}
         </div>
 
         {/* Technical Section */}
-        <div className={`transition-all duration-1000 ${visibleSections.technical ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="p-4 border border-gray-700 rounded-lg bg-gray-800">
-            <div className="flex items-center mb-3">
+        <div className="p-4">
+          <button
+            className="flex items-center justify-between w-full text-left"
+            onClick={() => toggleSection("technical")}
+          >
+            <div className="flex items-center">
               <CodeIcon className="h-4 w-4 text-green-400 mr-2" />
-              <span className="text-sm font-semibold text-white">Technical Issues</span>
+              <span className="text-sm font-medium text-gray-300">Technical Issues</span>
             </div>
-            {visibleSections.technical && (
-              <div className="text-sm text-gray-300 leading-relaxed">
-                <div className="whitespace-pre-line">
-                  {typewriterText.technical}
-                  <span className="animate-pulse">|</span>
-                </div>
-              </div>
+            {expandedSections.technical ? (
+              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             )}
-          </div>
+          </button>
+
+          {expandedSections.technical && (
+            <div className="mt-2 text-xs text-gray-400 pl-6">{insightSections.technical}</div>
+          )}
         </div>
 
         {/* Content Section */}
-        <div className={`transition-all duration-1000 ${visibleSections.content ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="p-4 border border-gray-700 rounded-lg bg-gray-800">
-            <div className="flex items-center mb-3">
+        <div className="p-4">
+          <button
+            className="flex items-center justify-between w-full text-left"
+            onClick={() => toggleSection("content")}
+          >
+            <div className="flex items-center">
               <FileTextIcon className="h-4 w-4 text-green-400 mr-2" />
-              <span className="text-sm font-semibold text-white">Content Strategy</span>
+              <span className="text-sm font-medium text-gray-300">Content Strategy</span>
             </div>
-            {visibleSections.content && (
-              <div className="text-sm text-gray-300 leading-relaxed">
-                <div className="whitespace-pre-line">
-                  {typewriterText.content}
-                  <span className="animate-pulse">|</span>
-                </div>
-              </div>
+            {expandedSections.content ? (
+              <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             )}
-          </div>
+          </button>
+
+          {expandedSections.content && <div className="mt-2 text-xs text-gray-400 pl-6">{insightSections.content}</div>}
         </div>
       </div>
     </div>
