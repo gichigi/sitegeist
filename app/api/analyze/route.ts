@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("👻 AI Analysis API received data:", JSON.stringify(body, null, 2))
+    console.log("👻 Body has metrics:", !!body.metrics)
+    console.log("👻 Body has issues:", !!body.issues)
+    console.log("👻 Issues has orphanPages:", !!(body.issues && body.issues.orphanPages))
     
     // Handle both old format (nodes/links) and new format (report data)
     let siteData
