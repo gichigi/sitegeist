@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation"
 
 // Force dynamic rendering - disable static generation
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 import { Button } from "@/components/ui/button"
 import { Share2Icon, FileTextIcon, HomeIcon, AlertCircleIcon, RefreshCwIcon } from "lucide-react"
 import SimpleSitemapVisualization from "@/components/simple-sitemap-visualization"
